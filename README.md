@@ -6,46 +6,36 @@ PathFM-Cox is a weakly supervised survival prediction framework for hematoxylin 
 
 ## Graphic Abstract
 
-![Graphic Abstract](HE_GE_figure_components/HE_GE_figure_components/PNG/00_component_contact_sheet.png)
+<img width="1752" height="725" alt="framework" src="https://github.com/user-attachments/assets/4cf7329a-4dd4-4a02-a53a-ffb30e4341d1" />
+
 
 ## Step 1: generate H&E WSI patch tiles
 
 First, prepare the TCGA-SKCM H&E whole-slide images in `.svs` format.
 
-Second, edit the paths in `data_cut_svs.py` according to your local environment:
-
-- `svs_root_dir`: root directory of raw `.svs` files.
-- `save_root_dir`: output directory for tiled patch folders.
-- `stitch_csv_path`: output CSV file for slide tiling metadata.
-- `patch_size`: patch size; the paper uses non-overlapping `224 x 224` patches.
-- `level`: OpenSlide pyramid level; the paper uses level `0`.
-
 Run:
 
 ```bash
-python data_cut_svs.py
+python STEP1_generate_wsi_patch_tiles.py \
+  --svs_root_dir /path/to/slide-svs \
+  --save_root_dir /path/to/slide-cut \
+  --stitch_csv_path /path/to/svs_stitch_parameters.csv \
+  --patch_size 224 \
+  --level 0 \
+  --num_workers 32
 ```
 
-or submit the provided SLURM script:
-
-```bash
-sbatch run_TCGA_cut.sh
-```
-
-This step cuts each SVS into non-overlapping H&E patches named `patch_1.png`, `patch_2.png`, ..., and records the tiling parameters for each slide.
+This step cuts each SVS into non-overlapping `224 x 224` H&E patches named `patch_1.png`, `patch_2.png`, ..., and records the tiling parameters for each slide.
 
 ## Step 2: extract Lunit foundation patch features
 
-PathFM-Cox uses a frozen pathology foundation encoder for patch-level representation extraction. In the paper-level setting, we use `lunit` as the default encoder. The encoder is defined in `encoders.py`, and feature extraction is launched by `pipeline.py` with `--stage encode`.
+PathFM-Cox uses a frozen pathology foundation encoder for patch-level representation extraction. In the paper-level setting, we use `lunit` as the default encoder.
 
 Run:
 
 ```bash
-python pipeline.py \
-  --stage encode \
-  --survival_mode direct \
-  --tcga_slide_dir /path/to/slide-cut \
-  --clinical_total_path /path/to/TCGA_primary.csv \
+python STEP2_extract_patch_features.py \
+  --tcga_slide_dir /path/to/slide-cut  \
   --output_dir /path/to/results \
   --foundation_root /path/to/HE_foundation \
   --encoder lunit \
@@ -53,22 +43,17 @@ python pipeline.py \
   --image_size 224 \
   --batch_size 256 \
   --num_workers 16 \
-  --tissue_threshold 0.01 \
-  --resume
+  --tissue_threshold 0.01
 ```
 
 This step removes background patches with tissue ratio below `0.01`, normalizes retained patches with ImageNet mean and standard deviation, extracts frozen Lunit embeddings, projects features to `512` dimensions when needed, and caches patch features with slide-local grid coordinates.
 
 ## Step 3: train and evaluate H&E-only PathFM-Cox
 
-Run `pipeline.py` with `--stage downstream` and `--survival_mode direct` to train the H&E-only PathFM-Cox model. Only the coordinate-aware attention aggregation module and Cox survival head are optimized; the Lunit encoder remains frozen.
-
 Run:
 
 ```bash
-python pipeline.py \
-  --stage downstream \
-  --survival_mode direct \
+python STEP3_train_pathfm_cox.py \
   --tcga_slide_dir /path/to/slide-cut \
   --clinical_total_path /path/to/TCGA_primary.csv \
   --output_dir /path/to/results \
@@ -91,6 +76,6 @@ python pipeline.py \
   --early_stopping_patience 20
 ```
 
-This step reconstructs slide-local tile-grid coordinates from patch indices, applies sinusoidal coordinate encoding, combines morphology-driven and coordinate-guided attention scores, aggregates patch features into a patient-level WSI representation, and optimizes the Cox partial-likelihood loss for survival risk prediction.
+This step trains the H&E-only PathFM-Cox model. The Lunit encoder remains frozen, while the coordinate-aware attention aggregation module and Cox survival head are optimized. The model reconstructs slide-local tile-grid coordinates from patch indices, applies sinusoidal coordinate encoding, combines morphology-driven and coordinate-guided attention scores, aggregates patch features into a patient-level WSI representation, and optimizes the Cox partial-likelihood loss for survival risk prediction.
 
 The outputs include trained model checkpoints, cross-validation summaries, patient-level risk scores, C-index, log-rank test, hazard ratio, and Kaplan-Meier curves.
