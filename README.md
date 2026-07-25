@@ -1,3 +1,12 @@
+# PathFM-Cox
+
+PathFM-Cox: Coordinate-aware Survival Prediction from H&E Whole Slide Images Using Pathology Foundation Representations
+
+PathFM-Cox is a weakly supervised survival prediction framework for hematoxylin and eosin (H&E) whole-slide images (WSIs). It uses a frozen pathology foundation encoder to extract patch-level morphological representations, aggregates morphology and slide-local coordinates with coordinate-aware attention, and predicts patient-level survival risk with a Cox model.
+
+## Graphic Abstract
+
+![Graphic Abstract](HE_GE_figure_components/HE_GE_figure_components/PNG/00_component_contact_sheet.png)
 
 ## Step 1: generate H&E WSI patch tiles
 
