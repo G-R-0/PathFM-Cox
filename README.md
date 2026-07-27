@@ -30,7 +30,7 @@ This step cuts each SVS into non-overlapping `224 x 224` H&E patches named `patc
 Use the cached patch folders from Step 1 and run:
 
 ```bash
-python STEP2_extract_lunit_patch_features.py \
+python STEP2_extract_patch_features.py \
   --tcga_slide_dir /path/to/slide-cut \
   --clinical_total_path /path/to/TCGA_primary.csv \
   --output_dir /path/to/results \
@@ -50,7 +50,7 @@ This step filters background patches, normalizes retained patches with ImageNet 
 Use the cached features from Step 2 and run:
 
 ```bash
-python STEP3_train_pathfm_cox_lunit.py \
+python STEP3_train_pathfm_cox.py \
   --clinical_total_path /path/to/TCGA_primary.csv \
   --output_dir /path/to/results \
   --feature_cache_root /path/to/results/feature_cache/he_lunit_spot_cache \
