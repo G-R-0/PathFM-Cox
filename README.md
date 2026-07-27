@@ -11,9 +11,7 @@ PathFM-Cox is a weakly supervised survival prediction framework for hematoxylin 
 
 ## Step 1: generate H&E WSI patch tiles
 
-First, prepare the TCGA-SKCM H&E whole-slide images in `.svs` format.
-
-Run:
+Prepare the TCGA-SKCM H&E whole-slide images in `.svs` format, then run:
 
 ```bash
 python STEP1_generate_wsi_patch_tiles.py \
@@ -25,19 +23,18 @@ python STEP1_generate_wsi_patch_tiles.py \
   --num_workers 32
 ```
 
-This step cuts each SVS into non-overlapping `224 x 224` H&E patches named `patch_1.png`, `patch_2.png`, ..., and records the tiling parameters for each slide.
+This step cuts each SVS into non-overlapping `224 x 224` H&E patches named `patch_1.png`, `patch_2.png`, ... and records the tiling parameters for each slide.
 
 ## Step 2: extract Lunit foundation patch features
 
-PathFM-Cox uses a frozen pathology foundation encoder for patch-level representation extraction. In the paper-level setting, we use `lunit` as the default encoder.
-
-Run:
+Use the cached patch folders from Step 1 and run:
 
 ```bash
-python STEP2_extract_patch_features.py \
-  --tcga_slide_dir /path/to/slide-cut  \
+python STEP2_extract_lunit_patch_features.py \
+  --tcga_slide_dir /path/to/slide-cut \
+  --clinical_total_path /path/to/TCGA_primary.csv \
   --output_dir /path/to/results \
-  --foundation_root /path/to/HE_foundation \
+  --stitch_csv_path /path/to/svs_stitch_parameters.csv \
   --encoder lunit \
   --feature_dim 512 \
   --image_size 224 \
@@ -46,18 +43,17 @@ python STEP2_extract_patch_features.py \
   --tissue_threshold 0.01
 ```
 
-This step removes background patches with tissue ratio below `0.01`, normalizes retained patches with ImageNet mean and standard deviation, extracts frozen Lunit embeddings, projects features to `512` dimensions when needed, and caches patch features with slide-local grid coordinates.
+This step filters background patches, normalizes retained patches with ImageNet statistics, extracts frozen Lunit embeddings, projects features to `512` dimensions when needed, and caches patch features with slide-local grid coordinates.
 
 ## Step 3: train and evaluate H&E-only PathFM-Cox
 
-Run:
+Use the cached features from Step 2 and run:
 
 ```bash
-python STEP3_train_pathfm_cox.py \
-  --tcga_slide_dir /path/to/slide-cut \
+python STEP3_train_pathfm_cox_lunit.py \
   --clinical_total_path /path/to/TCGA_primary.csv \
   --output_dir /path/to/results \
-  --foundation_root /path/to/HE_foundation \
+  --feature_cache_root /path/to/results/feature_cache/he_lunit_spot_cache \
   --encoder lunit \
   --feature_dim 512 \
   --experiment_name PathFM_Cox_Lunit \
