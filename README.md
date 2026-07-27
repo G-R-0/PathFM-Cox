@@ -62,7 +62,6 @@ python STEP3_train_pathfm_cox_lunit.py \
   --mlp_hidden_dims 128 \
   --mlp_dropout 0.2 \
   --lambda_cox 1.0 \
-  --lambda_l1 0.0 \
   --cv_mode kfold \
   --cv_folds 5 \
   --cv_repeats 5 \
